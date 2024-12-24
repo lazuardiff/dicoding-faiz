@@ -8,7 +8,7 @@ The analysis was conducted using Python, leveraging powerful data manipulation a
 
 ## Dataset Description
 
-The dataset used in this project, `df_imputed`, contains hourly air quality and weather measurements collected from multiple monitoring stations between **March 1, 2013** and **February 28, 2017**. The dataset has been preprocessed to handle missing values and ensure data integrity.
+The dataset used in this project, `combined_data.csv`, contains hourly air quality and weather measurements collected from multiple monitoring stations between **March 1, 2013** and **February 28, 2017**. The dataset has been preprocessed to handle missing values and ensure data integrity.
 
 ### Data Structure
 
