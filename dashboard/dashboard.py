@@ -133,7 +133,6 @@ def main():
 
     with tabs[4]:
         with st.container():
-            st.subheader("Rata-rata Bulanan Polutan Udara Sepanjang Tahun")
             pollutants = ['PM2.5', 'PM10', 'SO2', 'NO2', 'CO', 'O3']
             plot_monthly_pollutant_trends(
                 combined_df, pollutants, style, palette)
@@ -149,7 +148,6 @@ def main():
 
     with tabs[5]:
         with st.container():
-            st.subheader("Statistik Suhu Stasiun")
             plot_station_temperature_stats(combined_df, style, palette)
             with st.expander("Penjelasan Statistik Suhu Stasiun"):
                 st.write("""
@@ -160,7 +158,6 @@ def main():
 
     with tabs[6]:
         with st.container():
-            st.subheader("Curah Hujan Tertinggi Per Stasiun")
             plot_highest_rainfall_station(combined_df, style, palette)
             with st.expander("Penjelasan Curah Hujan Tertinggi Per Stasiun"):
                 st.write("""

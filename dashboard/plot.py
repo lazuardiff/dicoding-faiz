@@ -207,7 +207,7 @@ def plot_station_pollutant_avg(df, pollutants, style, palette):
     plt.clf()
 
 
-def plot_monthly_pollutant_trends(df, pollutant_columns, palette="viridis", style="darkgrid"):
+def plot_monthly_pollutant_trends(df, pollutant_columns, style="darkgrid",palette="viridis"):
     """
     Membuat plot tren rata-rata bulanan polutan udara sepanjang tahun.
 
@@ -261,7 +261,7 @@ def plot_monthly_pollutant_trends(df, pollutant_columns, palette="viridis", styl
     plt.clf()
 
 
-def plot_station_temperature_stats(df, palette="coolwarm", style="darkgrid"):
+def plot_station_temperature_stats(df, style="darkgrid", palette="coolwarm"):
     """
     Membuat plot suhu tertinggi dan terendah per stasiun, serta menampilkan informasi
     stasiun dengan suhu tertinggi dan terendah.
@@ -340,7 +340,7 @@ def plot_station_temperature_stats(df, palette="coolwarm", style="darkgrid"):
         st.error(f"Error saat membuat visualisasi: {e}")
 
 
-def plot_highest_rainfall_station(df, palette="Blues_d", style="darkgrid"):
+def plot_highest_rainfall_station(df, style="darkgrid", palette="Blues_d"):
     """
     Membuat plot curah hujan tertinggi per stasiun, serta menampilkan informasi
     stasiun dengan curah hujan tertinggi.
