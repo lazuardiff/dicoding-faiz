@@ -121,11 +121,15 @@ This will launch the dashboard in your default web browser, allowing you to expl
 air-quality-analysis/
 ├── dashboard/
 │   └── dashboard.py
+│   └── plot.py
+│   └── combined_data.csv
 ├── data/
-│   └── df_imputed.csv
+│   └── PRSA_Data_Aotizhongxin_20130301-20170228.csv
+│   └── PRSA_Data_Changping_20130301-20170228.csv
 ├── requirements.txt
 ├── README.md
-└── LICENSE
+├── url.txt
+└── .gitignore
 ```
 
 - **dashboard/**: Contains the Streamlit dashboard application.
