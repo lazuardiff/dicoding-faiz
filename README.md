@@ -76,8 +76,8 @@ To set up the project environment, follow these steps:
 1. **Clone the Repository**
 
    ```bash
-   git clone https://github.com/yourusername/air-quality-analysis.git
-   cd air-quality-analysis
+   git clone https://github.com/paizramadhan/analisis-data-dicoding.git
+   cd analisis-data-dicoding
    ```
 
 2. **Create a Virtual Environment**
@@ -86,7 +86,7 @@ To set up the project environment, follow these steps:
 
    ```bash
    python3 -m venv .venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   source .venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. **Install Dependencies**

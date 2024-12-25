@@ -45,7 +45,7 @@ def main():
     )
 
     # Path ke file CSV
-    file_path = 'dashboard/combined_data.csv'
+    file_path = 'https://raw.githubusercontent.com/paizramadhan/analisis-data-dicoding/refs/heads/main/dashboard/combined_data.csv'
 
     # Memuat dan memproses data
     combined_df = process_data(file_path)
