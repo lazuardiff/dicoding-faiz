@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
 import numpy as np
+from plot import process_data, plot_pm_variation_combined, plot_weather_pollution_correlation, plot_pollutant_correlation, plot_station_pollutant_avg, display_filtered_dataframe
 
 # Mengatur konfigurasi halaman sebelum elemen lain
 st.set_page_config(
@@ -13,263 +14,6 @@ st.set_page_config(
 
 # Mengatur gaya seaborn default
 sns.set(style='darkgrid')
-
-
-@st.cache_data
-def process_data(file_path):
-    """
-    Membaca dan memproses data dari file CSV.
-
-    Parameters:
-    - file_path (str): Path ke file CSV.
-
-    Returns:
-    - pd.DataFrame: DataFrame yang telah diproses.
-    """
-    try:
-        df = pd.read_csv(file_path)
-    except FileNotFoundError:
-        st.error(f"File '{file_path}' tidak ditemukan. Pastikan path benar.")
-        st.stop()
-    except pd.errors.EmptyDataError:
-        st.error("File CSV kosong.")
-        st.stop()
-    except Exception as e:
-        st.error(f"Terjadi kesalahan saat membaca file CSV: {e}")
-        st.stop()
-
-    # Membuat kolom 'date' dari 'year', 'month', 'day', 'hour' jika tersedia
-    if {'year', 'month', 'day', 'hour'}.issubset(df.columns):
-        df['date'] = pd.to_datetime(
-            df[['year', 'month', 'day', 'hour']], errors='coerce')
-    else:
-        st.error(
-            "Kolom 'year', 'month', 'day', atau 'hour' tidak ditemukan dalam data.")
-        st.stop()
-
-    # Mengonversi kolom 'date' ke tipe datetime
-    if 'date' in df.columns:
-        df['date'] = pd.to_datetime(df['date'], errors='coerce')
-        missing_dates = df['date'].isna().sum()
-        if missing_dates > 0:
-            df = df.dropna(subset=['date'])
-        df = df.sort_values(by='date').reset_index(drop=True)
-    else:
-        st.error("Kolom 'date' tidak ditemukan dalam data.")
-        st.stop()
-
-    # Menambahkan kolom 'month' dan 'season'
-    df['month'] = df['date'].dt.month
-
-    def get_season(month):
-        if month in [12, 1, 2]:
-            return 'Winter'
-        elif month in [3, 4, 5]:
-            return 'Spring'
-        elif month in [6, 7, 8]:
-            return 'Summer'
-        else:
-            return 'Fall'
-
-    df['season'] = df['month'].apply(get_season)
-
-    return df
-
-
-def plot_pm25_over_time(df, style, palette):
-    """
-    Membuat plot PM2.5 variasi waktu untuk seluruh data.
-
-    Parameters:
-    - df (pd.DataFrame): DataFrame yang telah diproses.
-    - style (str): Gaya seaborn yang dipilih.
-    - palette (str): Palet warna seaborn yang dipilih.
-    """
-    if 'PM2.5' not in df.columns or 'date' not in df.columns or 'station' not in df.columns:
-        st.error("Kolom 'PM2.5', 'date', atau 'station' tidak ditemukan dalam data.")
-        return
-
-    plt.figure(figsize=(12, 6))
-    sns.set_style(style)
-    sns.set_palette(palette)
-    sns.lineplot(data=df, x='date', y='PM2.5', hue='station', marker='o')
-    plt.title('PM2.5 Variation over Time (Aotizhongxin and Changping)')
-    plt.xlabel('Date')
-    plt.ylabel('PM2.5 Concentration')
-    plt.legend(title='Station')
-    st.pyplot(plt.gcf())
-    plt.clf()
-
-
-def plot_pm10_over_time(df, style, palette):
-    """
-    Membuat plot PM10 variasi waktu untuk seluruh data.
-
-    Parameters:
-    - df (pd.DataFrame): DataFrame yang telah diproses.
-    - style (str): Gaya seaborn yang dipilih.
-    - palette (str): Palet warna seaborn yang dipilih.
-    """
-    if 'PM10' not in df.columns or 'date' not in df.columns or 'station' not in df.columns:
-        st.error("Kolom 'PM10', 'date', atau 'station' tidak ditemukan dalam data.")
-        return
-
-    plt.figure(figsize=(12, 6))
-    sns.set_style(style)
-    sns.set_palette(palette)
-    sns.lineplot(data=df, x='date', y='PM10', hue='station', marker='o')
-    plt.title('PM10 Variation over Time (Aotizhongxin and Changping)')
-    plt.xlabel('Date')
-    plt.ylabel('PM10 Concentration')
-    plt.legend(title='Station')
-    st.pyplot(plt.gcf())
-    plt.clf()
-
-
-def plot_average_monthly_pm25(df, style, palette):
-    """
-    Membuat plot rata-rata bulanan PM2.5 per stasiun.
-
-    Parameters:
-    - df (pd.DataFrame): DataFrame yang telah diproses.
-    - style (str): Gaya seaborn yang dipilih.
-    - palette (str): Palet warna seaborn yang dipilih.
-    """
-    if 'PM2.5' not in df.columns or 'month' not in df.columns or 'station' not in df.columns:
-        st.error("Kolom 'PM2.5', 'month', atau 'station' tidak ditemukan dalam data.")
-        return
-
-    monthly_pollution_station = df.groupby(['station', 'month'])[
-        ['PM2.5']].mean().reset_index()
-
-    plt.figure(figsize=(12, 6))
-    sns.set_style(style)
-    sns.set_palette(palette)
-    sns.lineplot(data=monthly_pollution_station, x='month',
-                 y='PM2.5', hue='station', marker='o')
-    plt.title('Average Monthly PM2.5 Levels by Station')
-    plt.xlabel('Month')
-    plt.ylabel('PM2.5 Concentration')
-    plt.xticks(np.arange(1, 13), ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
-    plt.legend(title='Station')
-    st.pyplot(plt.gcf())
-    plt.clf()
-
-
-def plot_average_monthly_pm10(df, style, palette):
-    """
-    Membuat plot rata-rata bulanan PM10 per stasiun.
-
-    Parameters:
-    - df (pd.DataFrame): DataFrame yang telah diproses.
-    - style (str): Gaya seaborn yang dipilih.
-    - palette (str): Palet warna seaborn yang dipilih.
-    """
-    if 'PM10' not in df.columns or 'month' not in df.columns or 'station' not in df.columns:
-        st.error("Kolom 'PM10', 'month', atau 'station' tidak ditemukan dalam data.")
-        return
-
-    monthly_pollution_station = df.groupby(['station', 'month'])[
-        ['PM10']].mean().reset_index()
-
-    plt.figure(figsize=(12, 6))
-    sns.set_style(style)
-    sns.set_palette(palette)
-    sns.lineplot(data=monthly_pollution_station, x='month',
-                 y='PM10', hue='station', marker='o')
-    plt.title('Average Monthly PM10 Levels by Station')
-    plt.xlabel('Month')
-    plt.ylabel('PM10 Concentration')
-    plt.xticks(np.arange(1, 13), ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
-    plt.legend(title='Station')
-    st.pyplot(plt.gcf())
-    plt.clf()
-
-
-def plot_average_seasonal_pm25(df, style, palette):
-    """
-    Membuat plot rata-rata musiman PM2.5 per stasiun.
-
-    Parameters:
-    - df (pd.DataFrame): DataFrame yang telah diproses.
-    - style (str): Gaya seaborn yang dipilih.
-    - palette (str): Palet warna seaborn yang dipilih.
-    """
-    if 'PM2.5' not in df.columns or 'season' not in df.columns or 'station' not in df.columns:
-        st.error(
-            "Kolom 'PM2.5', 'season', atau 'station' tidak ditemukan dalam data.")
-        return
-
-    seasonal_pollution_station = df.groupby(['station', 'season'])[
-        ['PM2.5']].mean().reset_index()
-
-    plt.figure(figsize=(10, 6))
-    sns.set_style(style)
-    sns.set_palette(palette)
-    sns.barplot(x='season', y='PM2.5', hue='station',
-                data=seasonal_pollution_station, palette='Set2')
-    plt.title('Average Seasonal PM2.5 Levels by Station')
-    plt.xlabel('Season')
-    plt.ylabel('PM2.5 Concentration')
-    plt.legend(title='Station')
-    st.pyplot(plt.gcf())
-    plt.clf()
-
-
-def plot_average_seasonal_pm10(df, style, palette):
-    """
-    Membuat plot rata-rata musiman PM10 per stasiun.
-
-    Parameters:
-    - df (pd.DataFrame): DataFrame yang telah diproses.
-    - style (str): Gaya seaborn yang dipilih.
-    - palette (str): Palet warna seaborn yang dipilih.
-    """
-    if 'PM10' not in df.columns or 'season' not in df.columns or 'station' not in df.columns:
-        st.error("Kolom 'PM10', 'season', atau 'station' tidak ditemukan dalam data.")
-        return
-
-    seasonal_pollution_station = df.groupby(['station', 'season'])[
-        ['PM10']].mean().reset_index()
-
-    plt.figure(figsize=(10, 6))
-    sns.set_style(style)
-    sns.set_palette(palette)
-    sns.barplot(x='season', y='PM10', hue='station',
-                data=seasonal_pollution_station, palette='Set1')
-    plt.title('Average Seasonal PM10 Levels by Station')
-    plt.xlabel('Season')
-    plt.ylabel('PM10 Concentration')
-    plt.legend(title='Station')
-    st.pyplot(plt.gcf())
-    plt.clf()
-
-
-def plot_correlation_heatmap(df, style, palette):
-    """
-    Membuat heatmap korelasi antara kondisi cuaca dan tingkat polusi.
-
-    Parameters:
-    - df (pd.DataFrame): DataFrame yang telah diproses.
-    - style (str): Gaya seaborn yang dipilih.
-    - palette (str): Palet warna seaborn yang dipilih.
-    """
-    corr_columns = ['PM2.5', 'PM10', 'TEMP', 'WSPM', 'PRES']
-    if not set(corr_columns).issubset(df.columns):
-        st.error(f"Kolom-kolom {corr_columns} tidak ditemukan dalam data.")
-        return
-
-    corr_matrix = df[corr_columns].corr()
-
-    plt.figure(figsize=(8, 6))
-    sns.set_style(style)
-    sns.set_palette(palette)
-    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1)
-    plt.title('Correlation between Weather Conditions and Pollution Levels')
-    st.pyplot(plt.gcf())
-    plt.clf()
 
 
 def main():
@@ -301,113 +45,90 @@ def main():
     )
 
     # Path ke file CSV
-    file_path = 'https://raw.githubusercontent.com/paizramadhan/analisis-data-dicoding/main/dashboard/combined_data.csv'
+    file_path = 'dashboard/combined_data.csv'
 
     # Memuat dan memproses data
     combined_df = process_data(file_path)
+
+    st.subheader("Overview")
+    st.write("This dashboard contains a bunch of analysis result of an air quality dataset provided by Dicoding Academy. The dataset itself includes information about various air pollutants such as SO2, NO2, CO, O3, as well as temperature, pressure, rain, wind direction, and wind speed.")
 
     # Menampilkan DataFrame yang telah diproses
     st.subheader("Data Kualitas Udara")
     st.write(
         "Berikut adalah data yang saya gunakan, data tersebut berasal dari [GitHub Repository](https://github.com/marceloreis/HTI/tree/master).")
-    st.dataframe(combined_df)
+    display_filtered_dataframe(combined_df)
 
     # Menambahkan Pertanyaan Bisnis
     st.subheader('Pertanyaan Bisnis')
     st.write("1. Bagaimana kualitas udara (khususnya tingkat PM2.5 dan PM10) bervariasi pada waktu yang berbeda sepanjang tahun di Changping dan Aotizhongxin?")
     st.write("2. Apa korelasi antara kondisi cuaca (misalnya, suhu, kecepatan angin, dan tekanan) dan tingkat polusi di wilayah ini?")
+    st.write(
+        "3. Apakah ada korelasi antara berbagai polutan udara (SO2, NO2, CO, O3)?")
+    st.write("4. Bagaimana konsentrasi polutan udara di berbagai lokasi stasiun?")
+    st.write(
+        "5. Apakah ada tren atau pola yang terlihat pada tingkat polutan sepanjang tahun?")
+    st.write("6. Pada stasiun mana suhu mencapai derajat terendah dan tertingginya?")
+    st.write("7. Pada stasiun mana curah hujan mencapai volume tertingginya?")
 
     # Membuat Tabs untuk Memisahkan Plot
     tabs = st.tabs(["Pertanyaan Bisnis No.1",
-                   "Pertanyaan Bisnis No.2", "Kesimpulan"])
+                   "Pertanyaan Bisnis No.2", "Pertanyaan Bisnis No.3", "Pertanyaan Bisnis No.4", "Pertanyaan Bisnis No.5", "Pertanyaan Bisnis No.6", "Pertanyaan Bisnis No.7", "Kesimpulan"])
 
     # Tab untuk Pertanyaan Bisnis No.1
     with tabs[0]:
         # Menampilkan grafik PM2.5 dengan container dan expander
         with st.container():
-            st.subheader("PM2.5 Variation over Time")
-            # Menambahkan label bahwa ini adalah jawaban untuk pertanyaan bisnis No.1
-            # st.markdown("**Menjawab Pertanyaan Bisnis No.1**")
-            plot_pm25_over_time(combined_df, style, palette)
-            with st.expander("Penjelasan PM2.5 Variation over Time"):
+            st.subheader("Tren Rata-rata Bulanan PM2.5 dan PM10")
+            plot_pm_variation_combined(combined_df, style, palette)
+            with st.expander("Penjelasan Tren Rata-rata Bulanan PM2.5 dan PM10"):
                 st.write("""
-                    - Kedua stasiun menunjukkan pola musiman yang berbeda dalam tingkat polusi baik PM2.5 maupun PM10. Stasiun Aotizhongxin umumnya mengalami puncak polusi pada awal tahun (Maret) dan akhir tahun (November), sedangkan stasiun Changping cenderung mengalami puncak polusi pada pertengahan tahun (Oktober). 
-                    - Secara keseluruhan, kualitas udara di stasiun Aotizhongxin lebih buruk dibandingkan dengan stasiun Changping, ditunjukkan oleh tingkat PM2.5 dan PM10 yang lebih tinggi.
-                """)
-
-        # Menampilkan grafik PM10 dengan container dan expander
-        with st.container():
-            st.subheader("PM10 Variation over Time")
-            # Menambahkan label bahwa ini adalah jawaban untuk pertanyaan bisnis No.1
-            # st.markdown("**Menjawab Pertanyaan Bisnis No.1**")
-            plot_pm10_over_time(combined_df, style, palette)
-            with st.expander("Penjelasan PM10 Variation over Time"):
-                st.write("""
-                    - Kedua stasiun menunjukkan pola musiman yang berbeda dalam tingkat polusi baik PM2.5 maupun PM10. Stasiun Aotizhongxin umumnya mengalami puncak polusi pada awal tahun (Maret) dan akhir tahun (November), sedangkan stasiun Changping cenderung mengalami puncak polusi pada pertengahan tahun (Oktober). 
-                    - Secara keseluruhan, kualitas udara di stasiun Aotizhongxin lebih buruk dibandingkan dengan stasiun Changping, ditunjukkan oleh tingkat PM2.5 dan PM10 yang lebih tinggi.
-                """)
-
-        # Menampilkan grafik Average Monthly PM2.5 dengan container dan expander
-        with st.container():
-            st.subheader("Average Monthly PM2.5 Levels by Station")
-            plot_average_monthly_pm25(combined_df, style, palette)
-            with st.expander("Penjelasan Average Monthly PM2.5 Levels by Station"):
-                st.write("""
-                    - Kedua stasiun menunjukkan pola musiman yang berbeda dalam tingkat polusi baik PM2.5 maupun PM10. Stasiun Aotizhongxin umumnya mengalami puncak polusi pada awal tahun (Maret) dan akhir tahun (November), sedangkan stasiun Changping cenderung mengalami puncak polusi pada pertengahan tahun (Oktober). 
-                    - Secara keseluruhan, kualitas udara di stasiun Aotizhongxin lebih buruk dibandingkan dengan stasiun Changping, ditunjukkan oleh tingkat PM2.5 dan PM10 yang lebih tinggi.
-                """)
-
-        # Menampilkan grafik Average Monthly PM10 dengan container dan expander
-        with st.container():
-            st.subheader("Average Monthly PM10 Levels by Station")
-            plot_average_monthly_pm10(combined_df, style, palette)
-            with st.expander("Penjelasan Average Monthly PM10 Levels by Station"):
-                st.write("""
-                    - Kedua stasiun menunjukkan pola musiman yang berbeda dalam tingkat polusi baik PM2.5 maupun PM10. Stasiun Aotizhongxin umumnya mengalami puncak polusi pada awal tahun (Maret) dan akhir tahun (November), sedangkan stasiun Changping cenderung mengalami puncak polusi pada pertengahan tahun (Oktober). 
-                    - Secara keseluruhan, kualitas udara di stasiun Aotizhongxin lebih buruk dibandingkan dengan stasiun Changping, ditunjukkan oleh tingkat PM2.5 dan PM10 yang lebih tinggi.
-                """)
-
-        # Menampilkan grafik Average Seasonal PM2.5 dengan container dan expander
-        with st.container():
-            st.subheader("Average Seasonal PM2.5 Levels by Station")
-            plot_average_seasonal_pm25(combined_df, style, palette)
-            with st.expander("Penjelasan Average Seasonal PM2.5 Levels by Station"):
-                st.write("""
-                    - Kedua stasiun menunjukkan pola musiman yang berbeda dalam tingkat polusi baik PM2.5 maupun PM10. Stasiun Aotizhongxin umumnya mengalami puncak polusi pada awal tahun (Maret) dan akhir tahun (November), sedangkan stasiun Changping cenderung mengalami puncak polusi pada pertengahan tahun (Oktober). 
-                    - Secara keseluruhan, kualitas udara di stasiun Aotizhongxin lebih buruk dibandingkan dengan stasiun Changping, ditunjukkan oleh tingkat PM2.5 dan PM10 yang lebih tinggi.
-                """)
-
-        # Menampilkan grafik Average Seasonal PM10 dengan container dan expander
-        with st.container():
-            st.subheader("Average Seasonal PM10 Levels by Station")
-            plot_average_seasonal_pm10(combined_df, style, palette)
-            with st.expander("Penjelasan Average Seasonal PM10 Levels by Station"):
-                st.write("""
-                    - Kedua stasiun menunjukkan pola musiman yang berbeda dalam tingkat polusi baik PM2.5 maupun PM10. Stasiun Aotizhongxin umumnya mengalami puncak polusi pada awal tahun (Maret) dan akhir tahun (November), sedangkan stasiun Changping cenderung mengalami puncak polusi pada pertengahan tahun (Oktober). 
-                    - Secara keseluruhan, kualitas udara di stasiun Aotizhongxin lebih buruk dibandingkan dengan stasiun Changping, ditunjukkan oleh tingkat PM2.5 dan PM10 yang lebih tinggi.
-                """)
+                    - Musim Dingin (Desember - Februari): Baik PM2.5 maupun PM10 meningkat signifikan, menunjukkan kualitas udara yang memburuk. Hal ini dapat meningkatkan risiko kesehatan, terutama bagi individu yang rentan terhadap penyakit pernapasan.
+                    - Musim Panas (Juni - Agustus): Kualitas udara relatif lebih baik dengan tingkat PM2.5 dan PM10 yang lebih rendah, meskipun Aotizhongxin tetap menunjukkan polusi yang lebih tinggi dibandingkan Changping.
+                        """)
 
     # Tab untuk Pertanyaan Bisnis No.2
     with tabs[1]:
         # Menampilkan grafik Korelasi antara Cuaca dan Polusi dengan container dan expander
         with st.container():
             st.subheader(
-                "Correlation between Weather Conditions and Pollution Levels")
+                "Korelasi Kondisi Cuaca dan Tingkat Polusi")
             # Menambahkan label bahwa ini adalah jawaban untuk pertanyaan bisnis No.2
             # st.markdown("**Menjawab Pertanyaan Bisnis No.2**")
-            plot_correlation_heatmap(combined_df, style, palette)
+            plot_weather_pollution_correlation(combined_df, style, palette)
             with st.expander("Penjelasan Correlation Heatmap"):
                 st.write("""
-                    - Menunjukkan hubungan yang sangat kuat antara konsentrasi PM2.5 dan PM10. Artinya, ketika tingkat PM2.5 meningkat, maka tingkat PM10 juga cenderung meningkat, dan sebaliknya. Hal ini menunjukkan bahwa kedua polutan ini seringkali berasal dari sumber yang sama atau dipengaruhi oleh faktor yang sama.
-                    - Ketika suhu meningkat, tekanan udara cenderung menurun.
-                """)
+                        - Aotizhongxin cenderung memiliki konsentrasi PM2.5 dan PM10 yang lebih tinggi dibandingkan Changping, terlihat dari distribusi yang lebih lebar pada scatter plot.
+                        - Suhu (TEMP) dan kecepatan angin (WSPM) memiliki dampak signifikan terhadap tingkat polusi, di mana suhu rendah dan kecepatan angin rendah meningkatkan konsentrasi polusi.
+                        - Tekanan udara (PRES) tidak menunjukkan hubungan yang signifikan dengan polusi
+                        """)
 
-    # Tab untuk Kesimpulan
+    # Tab untuk Pertanyaan Bisnis No.3
     with tabs[2]:
-        st.subheader("Kesimpulan")
-        st.write("""
-            Analisis data kualitas udara di stasiun Aotizhongxin dan Changping menunjukkan adanya perbedaan pola musiman yang signifikan antara kedua lokasi. Stasiun Aotizhongxin umumnya mengalami puncak polusi pada awal dan akhir tahun, sementara Changping pada pertengahan tahun. Secara keseluruhan, kualitas udara di Aotizhongxin lebih buruk dibandingkan Changping. Selain itu, terdapat korelasi yang sangat kuat antara konsentrasi PM2.5 dan PM10, mengindikasikan adanya sumber polusi yang sama atau faktor yang sama yang memengaruhi keduanya. Korelasi negatif antara suhu dan tekanan udara juga ditemukan, yang merupakan fenomena meteorologi umum. Variasi dalam distribusi konsentrasi berbagai polutan menunjukkan adanya masalah kualitas udara yang perlu diperhatikan, terutama di daerah dengan konsentrasi polutan tinggi atau pola distribusi yang tidak normal.
-        """)
+        with st.container():
+            st.subheader("Korelasi Antar Polutan Udara")
+            plot_pollutant_correlation(combined_df, style, palette)
+            with st.expander("Penjelasan Korelasi Antar Polutan"):
+                st.write("""
+                        - Polutan Primer:
+                            - NO2 dan CO menunjukkan hubungan yang kuat, menunjukkan bahwa keduanya berasal dari sumber utama yang sama, seperti emisi kendaraan.
+                            - SO2 memiliki korelasi moderat dengan NO2 dan CO, mencerminkan kontribusi dari pembakaran bahan bakar fosil.
+
+                        - Polutan Sekunder (O3):
+                            - Ozon (O3) memiliki hubungan negatif dengan NO2 dan CO, yang dapat dijelaskan oleh reaksi fotokimia di atmosfer. Ozon terbentuk ketika VOCs (volatile organic compounds) dan NOx bereaksi di bawah sinar matahari, sehingga konsentrasi tinggi NO2 dapat mengurangi ozon di lokasi tertentu.
+                        """)
+
+    # Tab untuk Pertanyaan Bisnis No.4
+    with tabs[3]:
+        st.subheader("Rata-rata Konsentrasi Polutan per Stasiun")
+        pollutants = ['PM2.5', 'PM10', 'SO2', 'NO2', 'CO', 'O3']
+        plot_station_pollutant_avg(combined_df, pollutants, style, palette)
+        with st.expander("Penjelasan Konsentrasi Polutan Udara per Stasiun"):
+            st.write("""
+                        - Aotizhongxin secara konsisten memiliki konsentrasi rata-rata polutan udara (PM2.5, PM10, SO2, NO2, CO) yang lebih tinggi dibandingkan Changping.
+                            - Hal ini menunjukkan kualitas udara yang lebih buruk di Aotizhongxin, kemungkinan besar karena aktivitas manusia seperti industri dan transportasi.
+                        - Konsentrasi O3 di kedua stasiun relatif sama, menunjukkan pola distribusi yang lebih dipengaruhi oleh proses atmosferik
+                    """)
 
 
 if __name__ == '__main__':
