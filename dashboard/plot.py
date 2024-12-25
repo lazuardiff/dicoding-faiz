@@ -207,6 +207,206 @@ def plot_station_pollutant_avg(df, pollutants, style, palette):
     plt.clf()
 
 
+def plot_monthly_pollutant_trends(df, pollutant_columns, palette="viridis", style="darkgrid"):
+    """
+    Membuat plot tren rata-rata bulanan polutan udara sepanjang tahun.
+
+    Parameters:
+    - df (pd.DataFrame): DataFrame yang telah diproses.
+    - pollutant_columns (list): Daftar nama kolom untuk polutan yang akan dianalisis.
+    - palette (str): Palet warna seaborn untuk plot.
+    - style (str): Gaya seaborn untuk plot.
+
+    Returns:
+    - None
+    """
+    st.subheader("Tren Rata-rata Bulanan Polutan Udara Sepanjang Tahun")
+
+    # Mengatur gaya seaborn
+    sns.set_style(style)
+    sns.set_palette(palette)
+
+    # Validasi kolom 'datetime'
+    if 'datetime' not in df.columns:
+        st.error("Kolom 'datetime' tidak ditemukan dalam dataset.")
+        return
+    if not pd.api.types.is_datetime64_any_dtype(df['datetime']):
+        try:
+            df['datetime'] = pd.to_datetime(df['datetime'], errors='coerce')
+        except Exception as e:
+            st.error(f"Error saat mengonversi kolom 'datetime': {e}")
+            return
+
+    # Resampling data per bulan dan menghitung rata-rata polutan
+    try:
+        monthly_pollutant_avg = df.set_index(
+            'datetime')[pollutant_columns].resample('M').mean().reset_index()
+    except Exception as e:
+        st.error(f"Error saat melakukan resampling data: {e}")
+        return
+
+    # Membuat plot
+    plt.figure(figsize=(14, 10))
+    for pol in pollutant_columns:
+        plt.plot(monthly_pollutant_avg['datetime'],
+                 monthly_pollutant_avg[pol], label=pol)
+    plt.title('Tren Rata-rata Bulanan Polutan Udara Sepanjang Tahun')
+    plt.xlabel('Bulan')
+    plt.ylabel('Konsentrasi Polutan')
+    plt.legend()
+    plt.grid(True)
+
+    # Menampilkan plot di Streamlit
+    st.pyplot(plt.gcf())
+    plt.clf()
+
+
+def plot_station_temperature_stats(df, palette="coolwarm", style="darkgrid"):
+    """
+    Membuat plot suhu tertinggi dan terendah per stasiun, serta menampilkan informasi
+    stasiun dengan suhu tertinggi dan terendah.
+
+    Parameters:
+    - df (pd.DataFrame): DataFrame yang telah diproses.
+    - palette (str): Palet warna seaborn untuk plot.
+    - style (str): Gaya seaborn untuk plot.
+
+    Returns:
+    - None
+    """
+    st.subheader("Suhu Tertinggi dan Terendah per Stasiun")
+
+    # Mengatur gaya seaborn
+    sns.set_style(style)
+    sns.set_palette(palette)
+
+    # Pastikan kolom 'TEMP' dan 'station' ada
+    required_columns = {'TEMP', 'station'}
+    if not required_columns.issubset(df.columns):
+        st.error(f"Kolom berikut wajib ada dalam dataset: {required_columns}")
+        return
+
+    # Menghitung suhu minimum dan maksimum per stasiun
+    try:
+        station_temp_stats = df.groupby('station')['TEMP'].agg(
+            ['min', 'max']).reset_index()
+    except Exception as e:
+        st.error(f"Error saat menghitung statistik suhu: {e}")
+        return
+
+    # Menemukan stasiun dengan suhu terendah dan tertinggi
+    try:
+        lowest_temp_station = station_temp_stats.loc[station_temp_stats['min'].idxmin(
+        )]
+        highest_temp_station = station_temp_stats.loc[station_temp_stats['max'].idxmax(
+        )]
+    except Exception as e:
+        st.error(f"Error saat menentukan stasiun dengan suhu ekstrem: {e}")
+        return
+
+    # Menampilkan hasil di Streamlit
+    st.write(
+        f"**Suhu terendah**: {lowest_temp_station['min']}°C di stasiun **{lowest_temp_station['station']}**")
+    st.write(
+        f"**Suhu tertinggi**: {highest_temp_station['max']}°C di stasiun **{highest_temp_station['station']}**")
+
+    # Visualisasi suhu per stasiun
+    try:
+        melted_temp = station_temp_stats.melt(
+            id_vars='station',
+            value_vars=['min', 'max'],
+            var_name='Temperature_Type',
+            value_name='Temperature'
+        )
+
+        plt.figure(figsize=(14, 8))
+        sns.barplot(
+            x='station',
+            y='Temperature',
+            hue='Temperature_Type',
+            data=melted_temp,
+            palette=palette
+        )
+        plt.title('Suhu Tertinggi dan Terendah per Stasiun')
+        plt.xlabel('Stasiun')
+        plt.ylabel('Suhu (°C)')
+        plt.xticks(rotation=45)
+        plt.legend(title='Jenis Suhu')
+
+        # Menampilkan plot di Streamlit
+        st.pyplot(plt.gcf())
+        plt.clf()
+    except Exception as e:
+        st.error(f"Error saat membuat visualisasi: {e}")
+
+
+def plot_highest_rainfall_station(df, palette="Blues_d", style="darkgrid"):
+    """
+    Membuat plot curah hujan tertinggi per stasiun, serta menampilkan informasi
+    stasiun dengan curah hujan tertinggi.
+
+    Parameters:
+    - df (pd.DataFrame): DataFrame yang telah diproses.
+    - palette (str): Palet warna seaborn untuk plot.
+    - style (str): Gaya seaborn untuk plot.
+
+    Returns:
+    - None
+    """
+    st.subheader("Curah Hujan Tertinggi per Stasiun")
+
+    # Mengatur gaya seaborn
+    sns.set_style(style)
+    sns.set_palette(palette)
+
+    # Pastikan kolom 'RAIN' dan 'station' ada
+    required_columns = {'RAIN', 'station'}
+    if not required_columns.issubset(df.columns):
+        st.error(f"Kolom berikut wajib ada dalam dataset: {required_columns}")
+        return
+
+    # Menghitung curah hujan maksimum per stasiun
+    try:
+        station_rain_max = df.groupby('station')['RAIN'].max().reset_index()
+    except Exception as e:
+        st.error(f"Error saat menghitung curah hujan maksimum: {e}")
+        return
+
+    # Menemukan stasiun dengan curah hujan tertinggi
+    try:
+        highest_rain_station = station_rain_max.loc[station_rain_max['RAIN'].idxmax(
+        )]
+    except Exception as e:
+        st.error(
+            f"Error saat menentukan stasiun dengan curah hujan tertinggi: {e}")
+        return
+
+    # Menampilkan hasil di Streamlit
+    st.write(
+        f"**Curah hujan tertinggi**: {highest_rain_station['RAIN']} mm di stasiun **{highest_rain_station['station']}**"
+    )
+
+    # Visualisasi curah hujan per stasiun
+    try:
+        plt.figure(figsize=(14, 8))
+        sns.barplot(
+            x='station',
+            y='RAIN',
+            data=station_rain_max,
+            palette=palette
+        )
+        plt.title('Curah Hujan Tertinggi per Stasiun')
+        plt.xlabel('Stasiun')
+        plt.ylabel('Curah Hujan (mm)')
+        plt.xticks(rotation=45)
+
+        # Menampilkan plot di Streamlit
+        st.pyplot(plt.gcf())
+        plt.clf()
+    except Exception as e:
+        st.error(f"Error saat membuat visualisasi: {e}")
+
+
 def display_filtered_dataframe(df):
     """
     Menampilkan DataFrame dengan filter langsung di dashboard Streamlit.

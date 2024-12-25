@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
 import numpy as np
-from plot import process_data, plot_pm_variation_combined, plot_weather_pollution_correlation, plot_pollutant_correlation, plot_station_pollutant_avg, display_filtered_dataframe
+from plot import process_data, plot_pm_variation_combined, plot_weather_pollution_correlation, plot_pollutant_correlation, plot_station_pollutant_avg, display_filtered_dataframe, plot_monthly_pollutant_trends, plot_station_temperature_stats, plot_highest_rainfall_station
 
 # Mengatur konfigurasi halaman sebelum elemen lain
 st.set_page_config(
@@ -120,15 +120,83 @@ def main():
 
     # Tab untuk Pertanyaan Bisnis No.4
     with tabs[3]:
-        st.subheader("Rata-rata Konsentrasi Polutan per Stasiun")
-        pollutants = ['PM2.5', 'PM10', 'SO2', 'NO2', 'CO', 'O3']
-        plot_station_pollutant_avg(combined_df, pollutants, style, palette)
-        with st.expander("Penjelasan Konsentrasi Polutan Udara per Stasiun"):
-            st.write("""
-                        - Aotizhongxin secara konsisten memiliki konsentrasi rata-rata polutan udara (PM2.5, PM10, SO2, NO2, CO) yang lebih tinggi dibandingkan Changping.
-                            - Hal ini menunjukkan kualitas udara yang lebih buruk di Aotizhongxin, kemungkinan besar karena aktivitas manusia seperti industri dan transportasi.
-                        - Konsentrasi O3 di kedua stasiun relatif sama, menunjukkan pola distribusi yang lebih dipengaruhi oleh proses atmosferik
-                    """)
+        with st.container():
+            st.subheader("Rata-rata Konsentrasi Polutan per Stasiun")
+            pollutants = ['PM2.5', 'PM10', 'SO2', 'NO2', 'CO', 'O3']
+            plot_station_pollutant_avg(combined_df, pollutants, style, palette)
+            with st.expander("Penjelasan Konsentrasi Polutan Udara per Stasiun"):
+                st.write("""
+                            - Aotizhongxin secara konsisten memiliki konsentrasi rata-rata polutan udara (PM2.5, PM10, SO2, NO2, CO) yang lebih tinggi dibandingkan Changping.
+                                - Hal ini menunjukkan kualitas udara yang lebih buruk di Aotizhongxin, kemungkinan besar karena aktivitas manusia seperti industri dan transportasi.
+                            - Konsentrasi O3 di kedua stasiun relatif sama, menunjukkan pola distribusi yang lebih dipengaruhi oleh proses atmosferik
+                        """)
+
+    with tabs[4]:
+        with st.container():
+            st.subheader("Rata-rata Bulanan Polutan Udara Sepanjang Tahun")
+            pollutants = ['PM2.5', 'PM10', 'SO2', 'NO2', 'CO', 'O3']
+            plot_monthly_pollutant_trends(
+                combined_df, pollutants, style, palette)
+            with st.expander("Penjelasan Rata-rata Bulanan Polutan Udara Sepanjang Tahun"):
+                st.write("""
+                        - Tren Musiman:
+                            - CO, PM2.5, PM10, SO2, dan NO2 menunjukkan peningkatan selama musim dingin karena aktivitas manusia yang lebih intensif dan kondisi atmosfer yang menahan polutan.
+                            - Ozon (O3) lebih tinggi selama musim panas karena pembentukan fotokimia yang dipengaruhi oleh sinar matahari.
+
+                        - Polusi Puncak:
+                            - Musim dingin menunjukkan tingkat polusi udara yang lebih tinggi untuk sebagian besar polutan primer, menandakan kualitas udara yang buruk selama periode ini.
+                        """)
+
+    with tabs[5]:
+        with st.container():
+            st.subheader("Statistik Suhu Stasiun")
+            plot_station_temperature_stats(combined_df, style, palette)
+            with st.expander("Penjelasan Statistik Suhu Stasiun"):
+                st.write("""
+                            - Suhu Tertinggi: Dicapai di kedua stasiun, yaitu 40°C, selama musim panas.
+                            - Suhu Terendah: Dicapai di kedua stasiun, yaitu -10°C, selama musim dingin.
+                            - Variasi Musiman: Kedua lokasi menunjukkan perbedaan suhu yang signifikan antara musim panas dan musim dingin, dengan rentang suhu sekitar 50°C.
+                        """)
+
+    with tabs[6]:
+        with st.container():
+            st.subheader("Curah Hujan Tertinggi Per Stasiun")
+            plot_highest_rainfall_station(combined_df, style, palette)
+            with st.expander("Penjelasan Curah Hujan Tertinggi Per Stasiun"):
+                st.write("""
+                            - Curah hujan tertinggi terjadi di stasiun Aotizhongxin, menjadikannya wilayah dengan curah hujan yang lebih intens dibandingkan Changping.
+                            - Perbedaan curah hujan antara kedua stasiun dapat disebabkan oleh faktor geografis, topografi, atau pola iklim lokal.
+                        """)
+
+    with tabs[7]:
+        st.subheader("Kesimpulan")
+        st.write("""
+                    1. Variasi Kualitas Udara:
+                        - PM2.5 dan PM10 menunjukkan pola musiman dengan peningkatan konsentrasi selama musim dingin (Desember-Februari) akibat inversi suhu dan aktivitas manusia.
+                        - Aotizhongxin memiliki konsentrasi polusi yang lebih tinggi dibandingkan Changping.
+                    
+                    2. Korelasi Cuaca dan Polusi:
+                        - Suhu (TEMP) memiliki korelasi negatif dengan PM2.5 dan PM10, menunjukkan polusi lebih tinggi pada suhu rendah.
+                        - Kecepatan angin (WSPM) berpengaruh signifikan dalam menyebarkan polutan, dengan korelasi negatif terhadap PM2.5 dan PM10.
+                        - Tekanan udara (PRES) tidak memiliki hubungan signifikan dengan tingkat polusi.
+                    
+                    3. Korelasi Antar Polutan:
+                        - NO2 dan CO memiliki korelasi kuat positif, menunjukkan sumber emisi yang sama seperti kendaraan bermotor.
+                          Ozon (O3) memiliki korelasi negatif dengan NO2 dan CO, menunjukkan proses fotokimia yang berlawanan dengan polutan primer.
+                    
+                    4. Konsentrasi Polutan per Stasiun:
+                        - Aotizhongxin secara konsisten mencatat konsentrasi PM2.5, PM10, SO2, NO2, dan CO yang lebih tinggi dibandingkan Changping, menunjukkan kualitas udara yang lebih buruk di stasiun ini.
+                    
+                    5. Tren Polusi Sepanjang Tahun:
+                        - CO, PM2.5, PM10, SO2, dan NO2 meningkat selama musim dingin akibat aktivitas manusia dan inversi suhu.
+                        - Ozon (O3) lebih tinggi selama musim panas, terbentuk melalui reaksi fotokimia di bawah sinar matahari.
+                    
+                    6. Suhu Ekstrem:
+                        - Suhu tertinggi (40°C) dan terendah (-10°C) tercatat di kedua stasiun, menunjukkan variasi musiman yang ekstrem di wilayah ini.
+                    
+                    7. Curah Hujan Tertinggi:
+                        - Aotizhongxin mencatat curah hujan tertinggi (70 mm), lebih tinggi dibandingkan Changping (50 mm), menunjukkan intensitas hujan yang lebih besar di wilayah ini.
+                """)
 
 
 if __name__ == '__main__':
